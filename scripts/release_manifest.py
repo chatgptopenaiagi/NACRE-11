@@ -98,6 +98,7 @@ def metadata(path, kind, provenance):
             for item in core:
                 name = item.name.split("/", 1)[1]
                 require(hashes.get(name) == sha256(archive.extractfile(item).read()), "Source distribution differs from its build record: " + name)
+    info = info.replace("\r\n", "\n")
     require(re.search(r"^Name: nacre11$", info, re.M) is not None, "Unexpected Python package name")
     require(re.search(r"^Version: " + re.escape(VERSION) + r"$", info, re.M) is not None, "Unexpected Python package version")
     python = re.search(r"^Requires-Python: (.+)$", info, re.M)
