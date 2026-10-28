@@ -11,6 +11,7 @@ import unittest
 from unittest.mock import patch
 
 from nacre import adapters, api, builtin
+from nacre import __version__
 from nacre.contracts import NacreError
 from nacre.identity import module_fingerprint
 from nacre.runtime import _implementation_digest
@@ -93,7 +94,7 @@ class PublicPortabilityTests(unittest.TestCase):
 
     def test_optional_capabilities_are_visible_but_unavailable(self):
         discovered=api.discover()
-        self.assertEqual(len(discovered["capabilities"]),30)
+        self.assertEqual(len(discovered["capabilities"]),47)
         self.assertTrue(discovered["availability"]["db.query"]["available"])
         self.assertFalse(discovered["availability"]["math.diff"]["available"])
         self.assertFalse(discovered["availability"]["repo.roundtrip"]["available"])
@@ -111,7 +112,7 @@ class PublicPortabilityTests(unittest.TestCase):
 
     def test_portable_fingerprints_do_not_contain_developer_paths(self):
         keys=adapters.dependency_fingerprints()
-        self.assertEqual(set(keys),{"nacre.adapters","sqlite_version"})
+        self.assertEqual(set(keys),{"nacre.adapters","sqlite_version","numerical"})
         self.assertEqual(len(keys["nacre.adapters"]),64)
 
     def test_identity_does_not_read_module_file_path(self):
@@ -157,7 +158,7 @@ class PublicPortabilityTests(unittest.TestCase):
 
     def test_cli_help_and_error_exit_codes(self):
         self.assertEqual(self.cli("--help").returncode,0)
-        self.assertIn(b"Nacre-11 0.1.0",self.cli("--version").stdout)
+        self.assertIn(("Nacre-11 "+__version__).encode(),self.cli("--version").stdout)
         for text,expected in (("let answer: Integer = ;",2),("let answer: Integer = 1 / 0;",2),("emit 1 / 0;",1)):
             process=self.cli("run",str(self.source(text)))
             self.assertEqual(process.returncode,expected,process.stdout)

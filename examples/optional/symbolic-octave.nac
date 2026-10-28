@@ -1,0 +1,6 @@
+# Exact polynomial derivative is converted to finite-real coefficients explicitly.
+task symbolic: Record <- symbolic.polynomial(coefficients=[3,0,2,1],action="differentiate");
+task numerical: Record <- octave.polynomial(coefficients=symbolic.coefficients,points=[0,1,2]);
+verify symbolic.exact_coefficients == ["9","0","2"];
+verify numerical.verification.passed;
+emit {symbolic:symbolic,numerical:numerical};

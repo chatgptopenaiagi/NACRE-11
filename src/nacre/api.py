@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import uuid
 from . import __version__
-from . import builtin, adapters
+from . import builtin, adapters, numerical
 from .contracts import NacreError, fingerprint
 
 
@@ -18,16 +18,20 @@ def registry():
     caps = builtin.get_capabilities()
     external = adapters.get_capabilities()
     if caps.keys() & external.keys(): raise NacreError("CAPABILITY", "Duplicate capability registration")
-    return {**caps, **external}
+    numbers = numerical.get_capabilities()
+    if (caps.keys() | external.keys()) & numbers.keys(): raise NacreError("CAPABILITY", "Duplicate numerical capability registration")
+    return {**caps, **external, **numbers}
 
 def discover():
     capabilities=registry()
     available={name:{"available":True,"requires":[],"scope":"Portable local capability"} for name in builtin.get_capabilities()}
     available.update(adapters.capability_availability())
+    available.update(numerical.availability())
     return {"language":"Nacre-11","version":__version__,"capabilities":[cap.to_dict() for _,cap in sorted(capabilities.items())],
             "availability":available,"availability_scope":"Configuration/path discovery only; no external engines launched or service workloads verified"}
 
 def invoke(name, args, context):
+    if name in numerical.get_capabilities(): return numerical.invoke(name,args,context)
     return (builtin.invoke if name in builtin.get_capabilities() else adapters.invoke)(name,args,context)
 
 def check(source, workspace=None, source_path=None):

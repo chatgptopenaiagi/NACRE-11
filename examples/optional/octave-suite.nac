@@ -1,0 +1,34 @@
+# Finite real inputs; all results come from a separate GNU Octave process.
+# Fixed numerical/signal/optimization demos do not accept arbitrary expressions.
+task inverse: Record <- octave.inverse(a=[[4,1],[1,3]]);
+task qr: Record <- octave.qr(a=[[1,2],[3,4],[5,7]]);
+task eigen: Record <- octave.eigen(a=[[2,1],[1,2]]);
+task polynomial: Record <- octave.polynomial(coefficients=[2,-3,1],points=[-2,0,1,2]);
+task regression: Record <- octave.regression(x=[[1,0],[1,1],[1,2],[1,3]],y=[[1],[3],[5],[7]]);
+task fourier: Record <- octave.fft(values=[0,1,0,-1]);
+task stats: Record <- octave.statistics(values=[[1,2,3,4]]);
+task numerical: Record <- octave.numerical_demo();
+task signal: Record <- octave.signal_demo();
+task optimum: Record <- octave.optimization_demo();
+task plot: Record <- octave.plot();
+task plot_integrity: Bool <- core.artifact_verify(artifact=plot.artifact);
+task inverse_value: Bool <- core.approx(actual=inverse.result[0][0],expected=3/11,tolerance=1e-10);
+task regression_slope: Bool <- core.approx(actual=regression.coefficients[1][0],expected=2,tolerance=1e-10);
+task integral_value: Bool <- core.approx(actual=numerical.result.integral_sin_0_pi,expected=2,tolerance=1e-10);
+verify inverse.verification.passed and inverse_value;
+verify qr.verification.passed and qr.shape == [3,2];
+verify eigen.verification.passed and eigen.shape == [2,2];
+verify polynomial.verification.passed and polynomial.result == [[15,1,0,3]];
+verify regression.verification.passed and regression_slope;
+verify fourier.verification.passed and fourier.shape == [1,4];
+verify stats.verification.passed and stats.result.mean == 2.5;
+verify numerical.verification.passed and integral_value;
+verify signal.verification.passed;
+verify optimum.verification.passed;
+verify plot.verification.passed and plot_integrity;
+emit {inverse:inverse.verification.passed,qr:qr.verification.passed,eigen:eigen.verification.passed,
+      polynomial:polynomial.verification.passed,regression:regression.verification.passed,
+      fft:fourier.verification.passed,statistics:stats.verification.passed,
+      numerical:numerical.verification.passed,signal:signal.verification.passed,
+      optimization:optimum.verification.passed,plot_artifact_integrity:plot_integrity};
+emit plot.artifact;

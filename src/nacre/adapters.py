@@ -123,6 +123,8 @@ def dependency_fingerprints():
         result["NACRE_GENESIS10_ROOT"] = str(root)
         paths.extend(root / name for name in ("genesis10/core.py", "integrations/experiments.py"))
     result.update({str(path): _sha(path) if path.is_file() else "missing" for path in paths})
+    from .numerical import dependency_fingerprints as numerical_dependencies
+    result["numerical"] = numerical_dependencies()
     return result
 
 

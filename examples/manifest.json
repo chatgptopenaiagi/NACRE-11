@@ -162,6 +162,57 @@
         "sqlserver",
         "sympy"
       ]
+    },
+    {
+      "file": "optional/octave-matrix.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [
+        "octave-courier",
+        "GNU Octave"
+      ],
+      "expected_emitted": [
+        [
+          [
+            19,
+            22
+          ],
+          [
+            43,
+            50
+          ]
+        ]
+      ]
+    },
+    {
+      "file": "optional/octave-solve.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [
+        "octave-courier",
+        "GNU Octave"
+      ]
+    },
+    {
+      "file": "optional/symbolic-octave.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [
+        "octave-courier",
+        "GNU Octave",
+        "sympy"
+      ]
+    },
+    {
+      "file": "optional/octave-suite.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [
+        "octave-courier",
+        "GNU Octave",
+        "gnuplot"
+      ],
+      "expected_artifacts": 1
     }
   ]
 }

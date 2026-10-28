@@ -1,0 +1,10 @@
+# Install the independent Octave Courier wheel and GNU Octave first.
+let a: List = [[1,2],[3,4]];
+let b: List = [[5,6],[7,8]];
+task engines: Record <- engine.discover();
+task engine: Record <- engine.select(operation="matrix_product",precision="binary64",shape=[2,2]);
+task product: Record <- octave.multiply(a=a,b=b,engine=engine);
+task proof: Record <- matrix.verify(a=a,b=b,result=product);
+verify product.shape == [2,2] and proof.passed;
+verify product.verification.passed;
+emit product.result;

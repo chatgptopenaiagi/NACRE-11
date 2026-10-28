@@ -12,7 +12,7 @@ import struct
 import types
 
 
-MODULES = ("__init__", "contracts", "identity", "language", "runtime", "builtin", "adapters", "api", "cli", "mcp_server")
+MODULES = ("__init__", "contracts", "identity", "language", "runtime", "builtin", "adapters", "api", "cli", "mcp_server", "numerical", "numerical_verify", "octave_operations")
 FROZEN_DICT = getattr(builtins, "frozendict", None)
 
 

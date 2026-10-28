@@ -1,0 +1,6 @@
+let a: List = [[3,1],[1,2]];
+let b: List = [[9],[8]];
+task solution: Record <- octave.solve(a=a,b=b);
+task proof: Record <- matrix.verify(a=a,b=b,result=solution,operation="solve");
+verify proof.passed and solution.shape == [2,1];
+emit solution.result;

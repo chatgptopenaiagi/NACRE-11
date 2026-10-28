@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nacre11"
-version = "0.1.0"
+version = "0.2.0"
 description = "An experimental programming language for composing and verifying software capabilities"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -25,6 +25,7 @@ dependencies = []
 
 [project.optional-dependencies]
 mcp = ["mcp>=1.28.1,<2"]
+symbolic = ["sympy>=1.14,<2"]
 
 [project.scripts]
 nacre = "nacre.cli:main"
@@ -40,3 +41,6 @@ where = ["src"]
 
 [tool.setuptools]
 include-package-data = true
+
+[tool.setuptools.package-data]
+nacre = ["*.m"]
