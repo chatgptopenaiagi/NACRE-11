@@ -1,4 +1,5 @@
 """Checkpoint identities remain stable across real fresh-process hash seeds."""
+import builtins
 import json
 import os
 from pathlib import Path
@@ -7,8 +8,30 @@ import sys
 import tempfile
 import unittest
 
+from nacre.identity import _code_data, _constant_data, _digest
+
 
 class IdentityPortabilityTests(unittest.TestCase):
+    def test_slice_constants_and_compiled_slicing_are_bound(self):
+        self.assertNotEqual(_constant_data(slice(1, 4)), _constant_data(slice(2, 4)))
+        self.assertNotEqual(_constant_data(slice(1, 4)), _constant_data(slice(1, 4, 2)))
+        first = compile("lambda value: value[1:4]", "identity-slice-fixture", "eval")
+        second = compile("lambda value: value[2:4]", "identity-slice-fixture", "eval")
+        if sys.version_info >= (3, 14):
+            nested = next(value for value in first.co_consts if hasattr(value, "co_consts"))
+            self.assertTrue(any(type(value) is slice for value in nested.co_consts))
+        self.assertNotEqual(_digest(_code_data(first)), _digest(_code_data(second)))
+
+    def test_frozen_dictionary_constants_when_provided_by_interpreter(self):
+        constructor = getattr(builtins, "frozendict", None)
+        if constructor is None:
+            return
+        first = constructor([("b", 2), ("a", 1)])
+        second = constructor([("a", 1), ("b", 2)])
+        self.assertNotEqual(_constant_data(first), _constant_data(second))
+        code = (lambda: None).__code__.replace(co_consts=(None, first))
+        self.assertEqual(len(_digest(_code_data(code))), 64)
+
     def environment(self, seed):
         environment = {key: value for key, value in os.environ.items() if not key.startswith("NACRE_GENESIS")}
         environment["PYTHONHASHSEED"] = str(seed)

@@ -4,6 +4,7 @@ These digests invalidate caches; they are not signatures or authentication.
 The module loader supplies the same trusted code Python imported, so frozen
 distributions do not need loose .py files beside the executable.
 """
+import builtins
 import hashlib
 import importlib
 import json
@@ -12,6 +13,7 @@ import types
 
 
 MODULES = ("__init__", "contracts", "identity", "language", "runtime", "builtin", "adapters", "api", "cli", "mcp_server")
+FROZEN_DICT = getattr(builtins, "frozendict", None)
 
 
 def _constant_data(value):
@@ -20,6 +22,8 @@ def _constant_data(value):
         return ["none"]
     if value is Ellipsis:
         return ["ellipsis"]
+    if value is StopIteration:
+        return ["stop-iteration"]
     if type(value) is bool:
         return ["bool", value]
     if type(value) is int:
@@ -34,6 +38,11 @@ def _constant_data(value):
         return ["bytes", value.hex()]
     if type(value) is tuple:
         return ["tuple", [_constant_data(item) for item in value]]
+    if type(value) is slice:
+        return ["slice", _constant_data(value.start), _constant_data(value.stop), _constant_data(value.step)]
+    if FROZEN_DICT is not None and type(value) is FROZEN_DICT:
+        # Mapping iteration order is meaningful, unlike frozenset order.
+        return ["frozendict", [[_constant_data(key), _constant_data(item)] for key, item in value.items()]]
     if type(value) is frozenset:
         items = [_constant_data(item) for item in value]
         items.sort(key=lambda item: json.dumps(item, sort_keys=True, separators=(",", ":"), ensure_ascii=True))
