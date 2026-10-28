@@ -30,7 +30,8 @@ class PublicPortabilityTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory(prefix="nacre-public-")
         self.addCleanup(self.temp.cleanup)
-        self.root=Path(self.temp.name)/"workspace space ü"
+        # Windows CI TEMP may use an 8.3 alias or junction; compare canonical paths.
+        self.root=Path(self.temp.name).resolve()/"workspace space ü"
         self.root.mkdir()
         self.env=patch.dict(os.environ,{"NACRE_GENESIS9_ROOT":"","NACRE_GENESIS10_ROOT":""})
         self.env.start()
