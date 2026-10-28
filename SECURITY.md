@@ -2,7 +2,7 @@
 
 ## Supported release
 
-Version 0.1.0 is an experimental prerelease. There is no guaranteed support window, security SLA or automatic update service. Review releases and their notes before adopting a newer version.
+Version 0.2.0 is an experimental prerelease. There is no guaranteed support window, security SLA or automatic update service. Review releases and their notes before adopting a newer version.
 
 ## Report a vulnerability
 
@@ -20,4 +20,4 @@ Checkpoints and receipts can contain source-derived data and external results. S
 
 A failed `verify` cannot roll back earlier effects, and running external workers can finish after cancellation. Resume reruns reads/writes. Inspect an external system after an ambiguous write failure before retrying a program.
 
-Download release assets from the project's release page and compare their checksums. Version 0.1.0 does not claim code signing or an authenticated update mechanism. Optional dependencies and configured engine source retain their own update and security responsibilities.
+Download release assets from the project's release page and compare their checksums. Version 0.2.0 does not claim code signing or an authenticated update mechanism. Optional dependencies and configured engine source retain their own update and security responsibilities.

@@ -15,7 +15,7 @@ import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.1.0"
+VERSION = re.search(r'^__version__ = "([^"]+)"', (ROOT / "src/nacre/__init__.py").read_text(encoding="utf-8"), re.M).group(1)
 PAYLOADS = {
     f"nacre11-{VERSION}-py3-none-any.whl": ("wheel", "any", "any"),
     f"nacre11-{VERSION}.tar.gz": ("source-distribution", "any", "any"),
@@ -83,8 +83,9 @@ def metadata(path, kind, provenance):
             require("Tag: py3-none-any" in wheel and "Root-Is-Purelib: true" in wheel, "Universal wheel tags are not supported by its metadata")
             require(not any(name.lower().endswith((".dll", ".pyd", ".so", ".dylib")) for name in archive.namelist()),
                     "Platform binary found in the universal Python wheel")
-            core = [name for name in archive.namelist() if name.startswith("nacre/") and name.endswith(".py")]
+            core = [name for name in archive.namelist() if name.startswith("nacre/") and name.endswith((".py", ".m"))]
             require(core, "Wheel contains no Nacre implementation")
+            require("nacre/octave_operations.m" in core, "Wheel omitted the mathematical worker resource")
             for name in core:
                 require(hashes.get("src/" + name) == sha256(archive.read(name)), "Wheel source differs from its build record: " + name)
     else:
@@ -93,8 +94,9 @@ def metadata(path, kind, provenance):
             records = [item for item in archive.getmembers() if item.isfile() and item.name.endswith("/PKG-INFO") and item.name.count("/") == 1]
             require(len(records) == 1, "Source distribution package metadata is missing or ambiguous")
             info = archive.extractfile(records[0]).read().decode("utf-8")
-            core = [item for item in archive.getmembers() if item.isfile() and "/src/nacre/" in item.name and item.name.endswith(".py")]
+            core = [item for item in archive.getmembers() if item.isfile() and "/src/nacre/" in item.name and item.name.endswith((".py", ".m"))]
             require(core, "Source distribution contains no Nacre implementation")
+            require(any(item.name.endswith("/src/nacre/octave_operations.m") for item in core), "Source distribution omitted the mathematical worker resource")
             for item in core:
                 name = item.name.split("/", 1)[1]
                 require(hashes.get(name) == sha256(archive.extractfile(item).read()), "Source distribution differs from its build record: " + name)
@@ -135,6 +137,8 @@ def toolchain(provenance):
 def verification_summary(path, record):
     summary = {"receipt": safe_basename(path), "status": "PASSED"}
     acceptance = record.get("acceptance", record)
+    optional = acceptance.get("optional_execution", record.get("optional_execution", {}))
+    summary["optional_execution"] = {name: optional.get(name) is True for name in ("octave", "symbolic")}
     for name in ("passed", "failed"):
         value = acceptance.get(name)
         if value is not None:
@@ -190,6 +194,8 @@ def prepare(args):
         if target in ("Windows", "Linux"):
             require(any(s.get("platform") == target and s.get("architecture") == architecture for s in summaries),
                     "Standalone acceptance was not performed on its real target platform: " + name)
+            require(any(s.get("platform") == target and s["optional_execution"]["octave"] for s in summaries),
+                    "Standalone final bytes require real mathematical acceptance: " + name)
         row = {"filename": name, "artifact_type": kind, "target_platform": target, "target_architecture": architecture,
                "supported_python": None, "bytes": len(content), "sha256": digest, "source_commit": args.source_commit,
                "build_toolchain": toolchain(provenance), "build_environment": environment(provenance),
@@ -206,6 +212,7 @@ def prepare(args):
             if kind == "bundled-interpreter":
                 require(embedded.get("target") == target.lower() + "-x86_64", "Embedded binary target is mislabeled: " + name)
                 row["bundled_python_version"] = embedded["python"]
+                row["optional_integrations"] = embedded.get("optional_integrations", {})
                 row["execution_architecture"] = "Bundled Python interpreter and Nacre bytecode; not native Nacre machine-code compilation"
                 if target == "Linux":
                     require(embedded.get("libc") == ["glibc", args.linux_glibc], "Linux libc build fact differs from requested manifest")
@@ -214,6 +221,8 @@ def prepare(args):
         rows.append(row)
     wheel_summaries = next(row["verification"] for row in rows if row["artifact_type"] == "wheel")
     require({s.get("platform") for s in wheel_summaries} >= {"Windows", "Linux"}, "The shared wheel requires separate Windows and Linux acceptance")
+    require({s.get("platform") for s in wheel_summaries if s["optional_execution"]["octave"] and s["optional_execution"]["symbolic"]} >= {"Windows", "Linux"},
+            "The shared wheel requires real Octave plus SymPy acceptance on Windows and Linux")
     notes = args.release_notes.resolve()
     require(notes.is_file(), "Release notes source is missing")
     notes_content = notes.read_bytes()

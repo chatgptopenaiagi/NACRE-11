@@ -12,16 +12,16 @@ emit answer;
 
 Run it with `nacre run answer.nac`. The JSON result has `"status": "passed"` and `"emitted": [42]`.
 
-## Get version 0.1.0
+## Get version 0.2.0
 
-Download assets and their checksums from the [v0.1.0 experimental release](https://github.com/chatgptopenaiagi/NACRE-11/releases/tag/v0.1.0). This is a prerelease intended for investigation and feedback.
+Download assets and their checksums from the [v0.2.0 experimental release](https://github.com/chatgptopenaiagi/NACRE-11/releases/tag/v0.2.0). This is a prerelease intended for investigation and feedback.
 
 | Asset | Use |
 |---|---|
-| `Nacre-11-0.1.0-windows-x86_64.zip` | Extract and run `nacre.exe`; includes a Python runtime |
-| `Nacre-11-0.1.0-linux-x86_64.tar.gz` | Linux x86_64 bundled runtime; glibc 2.43 or later |
-| `nacre11-0.1.0-py3-none-any.whl` | Install into an existing compatible Python environment on Windows or Linux |
-| `nacre11-0.1.0.tar.gz` | Python source distribution with build metadata |
+| `Nacre-11-0.2.0-windows-x86_64.zip` | Extract and run `nacre.exe`; includes a Python runtime |
+| `Nacre-11-0.2.0-linux-x86_64.tar.gz` | Linux x86_64 bundled runtime; glibc 2.43 or later |
+| `nacre11-0.2.0-py3-none-any.whl` | Install into an existing compatible Python environment on Windows or Linux |
+| `nacre11-0.2.0.tar.gz` | Python source distribution with build metadata |
 | Source and examples archives | Read, build and experiment with the language |
 
 No PyPI publication is required: install the downloaded wheel directly.
@@ -29,7 +29,7 @@ No PyPI publication is required: install the downloaded wheel directly.
 ```shell
 python -m venv .venv
 # Activate .venv using your platform's normal command.
-python -m pip install ./nacre11-0.1.0-py3-none-any.whl
+python -m pip install ./nacre11-0.2.0-py3-none-any.whl
 nacre --version
 nacre run examples/hello.nac
 ```
@@ -46,6 +46,24 @@ Download the examples archive or source tree for that last command. The wheel in
 - Output artifacts and execution receipts with integrity checks.
 - Optional configured GENESIS bridges for selected symbolic, database, application and repository operations.
 - An optional five-tool stdio MCP interface using the same compiler and runtime.
+- Optional GNU Octave operations through the independent Octave Courier public API, with explicit matrix shapes, executable identity and independent numerical checks.
+- Bounded SymPy polynomial transformations composed with Octave evaluation; exact coefficients and rounded transport are distinguished.
+
+## Numerical composition in 0.2.0
+
+Install the separately published [Octave Courier 0.1.0 wheel](https://github.com/chatgptopenaiagi/octave-courier/releases/tag/v0.1.0) alongside Nacre, and make an external GNU Octave installation discoverable. Then run `nacre run examples/optional/octave-matrix.nac --receipt`:
+
+```nacre
+let a: List = [[1,2],[3,4]];
+let b: List = [[5,6],[7,8]];
+task engine: Record <- engine.select(operation="matrix_product",precision="binary64",shape=[2,2]);
+task product: Record <- octave.multiply(a=a,b=b,engine=engine);
+task proof: Record <- matrix.verify(a=a,b=b,result=product);
+verify product.shape == [2,2] and proof.passed;
+emit product.result;
+```
+
+The result comes from GNU Octave; the independent reference uses Python rational arithmetic. Nacre alone retains its dependency-free core. Courier remains an independent product, and no Nacre installation supplies GNU Octave. The optional standalone release build can include Courier's public Python package; inspect `BUILD-INFO.json` for actual contents. SymPy remains separately optional in a Python environment. See [Numerical capabilities](NUMERICAL-CAPABILITIES.md) for installation, supported operations and precision limits.
 
 ```nacre
 task left: Number <- core.wait(value=20, milliseconds=100);

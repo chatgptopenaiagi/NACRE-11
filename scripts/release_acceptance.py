@@ -10,11 +10,14 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import time
+
+VERSION = re.search(r'^__version__ = "([^"]+)"', (Path(__file__).resolve().parents[1] / "src/nacre/__init__.py").read_text(encoding="utf-8"), re.M).group(1)
 
 
 def main():
@@ -23,7 +26,11 @@ def main():
     parser.add_argument("--examples", type=Path, default=Path(__file__).resolve().parents[1] / "examples")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--label", default="installed-cli")
+    parser.add_argument("--with-octave", action="store_true", help="Execute Courier examples using an installed real GNU Octave")
+    parser.add_argument("--with-symbolic", action="store_true", help="Also execute symbolic examples when SymPy is installed")
     args = parser.parse_args()
+    if args.with_symbolic and not args.with_octave:
+        parser.error("--with-symbolic requires --with-octave for the combined example")
     command = json.loads(args.command_json)
     if not isinstance(command, list) or not command or not all(isinstance(x, str) for x in command):
         parser.error("--command-json must be a nonempty array of strings")
@@ -36,12 +43,15 @@ def main():
     if len(declared) != len(manifest["examples"]):
         raise ValueError("Duplicate example manifest entries")
     environment = {k: v for k, v in os.environ.items()
-                   if k not in ("PYTHONPATH", "PYTHONHOME") and not k.startswith("NACRE_GENESIS")}
+                   if k not in ("PYTHONPATH", "PYTHONHOME") and not k.startswith("NACRE_")}
     records = []
 
-    def invoke(arguments, workspace, expected_code=0, *, label, expected_status=None):
+    def invoke(arguments, workspace, expected_code=0, *, label, expected_status=None, missing_octave=False):
         began = time.perf_counter()
-        process = subprocess.run(command + arguments, cwd=workspace, env=environment,
+        selected_environment = dict(environment)
+        if missing_octave:
+            selected_environment["OCTAVE_EXECUTABLE"] = str(workspace / "missing-octave-engine")
+        process = subprocess.run(command + arguments, cwd=workspace, env=selected_environment,
                                  capture_output=True, text=True, encoding="utf-8", errors="strict", timeout=90)
         try:
             payload = json.loads(process.stdout)
@@ -86,9 +96,9 @@ def main():
         _, row = invoke(["--help"], root, label="help")
         require(row, "run" in row["stdout"] and "capabilities" in row["stdout"], "Help must describe commands")
         _, row = invoke(["--version"], root, label="version-flag")
-        require(row, "0.1.0" in row["stdout"], "Incorrect version")
+        require(row, VERSION in row["stdout"], "Incorrect version")
         value, row = invoke(["version"], root, label="version-json")
-        require(row, value is not None and value.get("version") == "0.1.0", "Incorrect JSON version")
+        require(row, value is not None and value.get("version") == VERSION, "Incorrect JSON version")
         value, row = invoke(["capabilities"], root, label="capability-discovery")
         require(row, value is not None and any(c["name"] == "core.sum" for c in value.get("capabilities", [])), "Core missing from discovery")
         for index, example in enumerate(manifest["examples"]):
@@ -97,8 +107,30 @@ def main():
             path = workspace / example["file"]
             if example.get("requires"):
                 _, row = invoke(["check", str(path)], workspace, label="optional-check:" + example["file"], expected_status="passed")
+                required = set(example["requires"])
+                is_octave = "octave-courier" in required
+                enabled = (is_octave and args.with_octave and
+                           ("sympy" not in required or args.with_symbolic) and
+                           not any(name.startswith("genesis") for name in required))
+                if enabled:
+                    value, row = invoke(["run", str(path), "--receipt"], workspace,
+                                        expected_code=example["expected_exit_code"],
+                                        expected_status=example["expected_status"], label="optional-execution:" + example["file"])
+                    if "expected_emitted" in example:
+                        require(row, value is not None and value.get("emitted") == example["expected_emitted"], "Optional result differs from example requirement")
+                    require(row, value is not None and artifacts(value, workspace), "Optional artifact bytes/path/hash invalid")
+                    if "expected_artifacts" in example:
+                        require(row, value is not None and artifact_count(value.get("emitted", [])) == example["expected_artifacts"], "Optional emitted artifact count differs")
+                    require(row, value is not None and all(v.get("passed") for v in value.get("verifications", [])) and bool(value.get("verifications")), "Explicit mathematical assertions are required")
+                    product_results = [v for v in value.get("results", {}).values() if isinstance(v, dict) and v.get("provenance", {}).get("engine") == "octave-courier"] if value else []
+                    require(row, bool(product_results) and all(v["provenance"].get("octave_version") and v["provenance"].get("executable_sha256") for v in product_results), "Actual Octave provenance is required")
+                    if value and value.get("receipt"):
+                        verified, receipt_row = invoke(["verify", value["receipt"]], workspace, label="optional-receipt:" + example["file"])
+                        require(receipt_row, verified is not None and verified.get("verified") is True, "Optional receipt verification failed")
+                    row["optional_integration"] = "Real Octave execution with independent program assertions and separate receipt integrity checks"
+                    continue
                 value, row = invoke(["run", str(path)], workspace, expected_code=1,
-                                    expected_status="failed", label="optional-absence:" + example["file"])
+                                    expected_status="failed", label="optional-absence:" + example["file"], missing_octave=is_octave)
                 require(row, value is not None and value.get("error", {}).get("code") == "UNAVAILABLE", "Optional engine absence must be explicit")
                 row["optional_integration"] = "Not executed; unconfigured absence behavior tested"
                 continue
@@ -155,7 +187,8 @@ def main():
               "command": command, "host": platform.platform(), "architecture": platform.machine(), "driver_python": sys.version,
               "passed": sum(r["status"] == "PASSED" for r in records), "failed": sum(r["status"] == "FAILED" for r in records),
               "example_manifest_sha256": hashlib.sha256((examples / "manifest.json").read_bytes()).hexdigest(),
-              "scope": "Actual installed CLI in fresh Unicode directories, no development PYTHONPATH or optional integration configuration; optional integrations test absence only.",
+              "scope": "Actual installed CLI in fresh Unicode directories, no development PYTHONPATH or GENESIS integration configuration; explicit optional execution flags are recorded separately.",
+              "optional_execution": {"octave": args.with_octave, "symbolic": args.with_symbolic},
               "records": records}
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

@@ -73,4 +73,6 @@ Between executions, persist source/includes, runtime/adapter bindings, capabilit
 
 ## Portable and optional capabilities
 
+Version 0.2.0 adds capability contracts, not new grammar or nominal types. Matrices are nested `List` values with explicit finite-real shape checks; results, engine identities and independent checks are `Record` values. New `engine.*`, `octave.*`, `matrix.verify` and `symbolic.polynomial` contracts are listed in [Numerical capabilities](NUMERICAL-CAPABILITIES.md). Existing v0.1 source syntax and post-graph verification semantics remain unchanged. Updated implementation/contract identities deliberately invalidate older checkpoints; rerun the program to create a new checkpoint.
+
 The public core requires no third-party runtime package for local arithmetic, structured transformations, artifacts or SQLite. Symbolic and external application/database/repository routes require explicitly configured compatible bridges. `nacre capabilities` separates descriptors from configuration availability, which is not a live service check. See [Interoperability](INTEROPERABILITY.md).

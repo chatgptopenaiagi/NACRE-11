@@ -2,7 +2,7 @@ name: Portable language and release artifacts
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'genesis14/**']
     tags: ['v*']
   pull_request:
   workflow_dispatch:
@@ -46,22 +46,63 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -r requirements-build.txt
+      - run: python scripts/fetch_courier.py --directory outputs/dependencies
+      - run: python -m pip install --no-deps outputs/dependencies/octave_courier-0.1.0-py3-none-any.whl
       - run: python scripts/build_release.py --kind python --source-commit ${{ github.sha }}
-      - run: python scripts/build_release.py --kind standalone --source-commit ${{ github.sha }}
+      - run: python scripts/build_release.py --kind standalone --with-octave-courier --source-commit ${{ github.sha }}
       - run: python scripts/build_release.py --kind archives --source-commit ${{ github.sha }}
-      - run: python scripts/verify_distribution.py dist/nacre11-0.1.0-py3-none-any.whl --kind wheel --output wheel-acceptance.json
-      - run: python scripts/verify_distribution.py dist/nacre11-0.1.0.tar.gz --kind sdist --output source-acceptance.json
+      - run: python scripts/verify_distribution.py dist/nacre11-0.2.0-py3-none-any.whl --kind wheel --output outputs/wheel-acceptance.json
+      - run: python scripts/verify_distribution.py dist/nacre11-0.2.0.tar.gz --kind sdist --output outputs/sdist-acceptance.json
+      - run: python scripts/verify_distribution.py dist/Nacre-11-0.2.0-source.zip --kind source --output outputs/source-acceptance.json
+      - run: python scripts/verify_distribution.py dist/Nacre-11-0.2.0-examples.zip --kind examples --runtime-wheel dist/nacre11-0.2.0-py3-none-any.whl --output outputs/examples-acceptance.json
       - name: Verify Windows bundle
         if: runner.os == 'Windows'
-        run: python scripts/verify_distribution.py dist/Nacre-11-0.1.0-windows-x86_64.zip --kind standalone --output standalone-acceptance.json
+        run: python scripts/verify_distribution.py dist/Nacre-11-0.2.0-windows-x86_64.zip --kind standalone --output outputs/standalone-acceptance.json
       - name: Verify Linux bundle
         if: runner.os == 'Linux'
-        run: python scripts/verify_distribution.py dist/Nacre-11-0.1.0-linux-x86_64.tar.gz --kind standalone --output standalone-acceptance.json
+        run: python scripts/verify_distribution.py dist/Nacre-11-0.2.0-linux-x86_64.tar.gz --kind standalone --output outputs/standalone-acceptance.json
+      - name: Install real Linux numerical runtime for artifact tests
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y octave gnuplot-nox ghostscript fonts-dejavu-core
+      - name: Test Linux mathematical wheel and standalone
+        if: runner.os == 'Linux'
+        run: |
+          python scripts/verify_distribution.py dist/nacre11-0.2.0-py3-none-any.whl --kind wheel --dependency-wheel outputs/dependencies/octave_courier-0.1.0-py3-none-any.whl --with-octave --output outputs/wheel-octave-acceptance.json
+          python scripts/verify_distribution.py dist/Nacre-11-0.2.0-linux-x86_64.tar.gz --kind standalone --with-octave --output outputs/standalone-octave-acceptance.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: distributions-${{ matrix.os }}
           path: |
             dist/*
-            *-acceptance.json
+            outputs/*-acceptance.json
             evidence/build-*.json
+
+  mathematical:
+    name: GNU Octave and SymPy Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.12', '3.14']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python }}
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y octave gnuplot-nox ghostscript fonts-dejavu-core
+      - run: python scripts/fetch_courier.py --directory outputs/dependencies
+      - run: python -m pip install . sympy==1.14.0 outputs/dependencies/octave_courier-0.1.0-py3-none-any.whl
+      - run: python -m unittest discover -s tests -v
+        env:
+          NACRE_TEST_OCTAVE: '1'
+      - run: python scripts/release_acceptance.py --command-json '["nacre"]' --with-octave --with-symbolic --output outputs/mathematical-acceptance.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: mathematical-${{ matrix.python }}
+          path: outputs/mathematical-acceptance.json

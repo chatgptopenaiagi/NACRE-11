@@ -23,7 +23,8 @@ import time
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.1.0"
+VERSION = re.search(r'^__version__ = "([^"]+)"', (ROOT / "src/nacre/__init__.py").read_text(encoding="utf-8"), re.M).group(1)
+BUNDLE_COURIER = False
 PUBLIC_DOCS_EXCLUDED = {"FINAL-RELEASE-REPORT.md", "SESSION-HANDOFF.md"}
 
 
@@ -67,6 +68,11 @@ def provenance(commit, kind):
         "python": platform.python_version(), "python_implementation": platform.python_implementation(),
         "libc": list(platform.libc_ver()) if sys.platform.startswith("linux") else None,
         "toolchain": {name: package_version(name) for name in ("PyInstaller", "build", "setuptools", "wheel")},
+        "optional_integrations": {"octave_courier": {
+            "version": package_version("octave-courier") if kind == "standalone" and BUNDLE_COURIER else None,
+            "bundled": kind == "standalone" and BUNDLE_COURIER,
+            "gnu_octave_bundled": False,
+            "scope": "Independent public Courier package; GNU Octave remains an external runtime dependency"}},
         "source_sha256": {p.relative_to(ROOT).as_posix(): digest(p) for p in files},
         "packaging": "Bundled Python interpreter and Nacre bytecode; not native Nacre machine-code compilation" if kind == "standalone" else "Pure Python source/runtime with no mandatory third-party dependencies",
         "reproducibility": "Source identity, pinned build tools and artifact hashes are recorded. Bit-identical binary rebuilds are not asserted.",
@@ -121,6 +127,16 @@ def runtime_licenses(destination):
         raise RuntimeError("Actual bundled Python runtime license is required")
     if "PYINSTALLER-COPYING.txt" not in copied:
         raise RuntimeError("Actual PyInstaller copyright/bootloader exception notice is required")
+    if BUNDLE_COURIER:
+        courier = importlib.metadata.distribution("octave-courier")
+        notices = [entry for entry in courier.files or []
+                   if Path(str(entry)).name.upper() in {"LICENSE", "LICENSE.TXT", "COPYING", "COPYING.TXT"}]
+        if not notices:
+            raise RuntimeError("Bundled Octave Courier requires its actual license notice")
+        for index, entry in enumerate(notices):
+            name = "OCTAVE-COURIER-LICENSE-" + str(index) + ".txt"
+            shutil.copyfile(courier.locate_file(entry), destination / name)
+            copied.append(name)
     write_json(destination / "NOTICE-MANIFEST.json", {"scope": "License/copyright notices for the actual bundled interpreter and selected native dependencies; Nacre LICENSE applies only to Nacre source", "files": {name: digest(destination / name) for name in sorted(copied)}})
     return copied
 
@@ -148,7 +164,13 @@ def build_standalone(output, commit, token):
     command = [sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--onedir", "--name", "nacre",
                "--paths", str(ROOT / "src"), "--distpath", str(work / "dist"), "--workpath", str(work / "work"),
                "--specpath", str(work), "--exclude-module", "nacre.mcp_server", "--exclude-module", "mcp",
-               "--exclude-module", "genesis9", "--exclude-module", "genesis10", str(ROOT / "scripts/standalone_entry.py")]
+               "--exclude-module", "genesis9", "--exclude-module", "genesis10",
+               "--exclude-module", "sympy", "--collect-data", "nacre"]
+    if BUNDLE_COURIER:
+        command += ["--collect-all", "octave_courier", "--copy-metadata", "octave-courier"]
+    else:
+        command += ["--exclude-module", "octave_courier"]
+    command.append(str(ROOT / "scripts/standalone_entry.py"))
     run(command, work / "pyinstaller.log")
     bundle = work / ("Nacre-11-" + VERSION + "-" + target)
     shutil.copytree(work / "dist/nacre", bundle)
@@ -193,11 +215,16 @@ def build_archives(output, commit, token):
 
 
 def main():
+    global BUNDLE_COURIER
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--kind", choices=("python", "standalone", "archives"), required=True)
     parser.add_argument("--output", type=Path, default=ROOT / "dist")
     parser.add_argument("--source-commit", required=True, help="Exact release source commit, or UNCOMMITTED for an explicitly provisional build")
+    parser.add_argument("--with-octave-courier", action="store_true", help="Bundle the independent installed Courier 0.1.0 package in a standalone artifact; GNU Octave is never bundled")
     args = parser.parse_args()
+    BUNDLE_COURIER = args.with_octave_courier
+    if BUNDLE_COURIER and (args.kind != "standalone" or package_version("octave-courier") != "0.1.0"):
+        parser.error("--with-octave-courier requires --kind standalone and the independently installed public Courier 0.1.0")
     if args.source_commit != "UNCOMMITTED" and not re.fullmatch(r"[0-9a-f]{40}", args.source_commit):
         parser.error("--source-commit must be a 40-digit Git SHA or UNCOMMITTED")
     output = args.output.resolve()
@@ -206,7 +233,19 @@ def main():
     started = time.perf_counter()
     try:
         verify_commit(args.source_commit)
+        declared = re.search(r'^version = "([^"]+)"', (ROOT / "pyproject.toml").read_text(encoding="utf-8"), re.M)
+        if declared is None or declared.group(1) != VERSION:
+            raise RuntimeError("Package metadata and language version disagree")
+        before = {p.relative_to(ROOT).as_posix(): digest(p) for p in public_files()}
+        names = (["nacre11-" + VERSION + "-py3-none-any.whl", "nacre11-" + VERSION + ".tar.gz"]
+                 if args.kind == "python" else ["Nacre-11-" + VERSION + "-source.zip", "Nacre-11-" + VERSION + "-examples.zip"]
+                 if args.kind == "archives" else ["Nacre-11-" + VERSION + ("-windows-x86_64.zip" if os.name == "nt" else "-linux-x86_64.tar.gz")])
+        if any((output / name).exists() for name in names):
+            raise RuntimeError("Output artifact already exists; select a new build directory")
         artifacts = {"python": build_python, "standalone": build_standalone, "archives": build_archives}[args.kind](output, args.source_commit, token)
+        verify_commit(args.source_commit)
+        if before != {p.relative_to(ROOT).as_posix(): digest(p) for p in public_files()}:
+            raise RuntimeError("Public source changed during the build; resulting artifacts are not accepted")
         record = {"status": "BUILT_NOT_YET_ACCEPTED", "checked_utc": datetime.now(timezone.utc).isoformat(), "elapsed_seconds": round(time.perf_counter() - started, 3),
                   "provenance": provenance(args.source_commit, args.kind), "artifacts": [{"filename": p.name, "bytes": p.stat().st_size, "sha256": digest(p)} for p in artifacts]}
     except Exception as exc:

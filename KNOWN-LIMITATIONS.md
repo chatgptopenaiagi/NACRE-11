@@ -1,6 +1,6 @@
 # Known limitations
 
-Nacre-11 0.1.0 is an experimental composition language. Expect rough edges and incompatible changes during its 0.x evolution.
+Nacre-11 0.2.0 is an experimental composition language. Expect rough edges and incompatible changes during its 0.x evolution.
 
 - Programs form finite graphs. There are no user functions, loops, mutable assignment, general exception handlers, reactive streams or distributed workers.
 - The compiler emits inspectable JSON graph IR, not machine code. Saved IR is not currently loaded as an executable input format.
@@ -19,3 +19,9 @@ Nacre-11 0.1.0 is an experimental composition language. Expect rough edges and i
 - JSON output filenames refuse overwrite. Start artifact examples in a fresh workspace. Optional engine output ownership/readback rules are operation-specific.
 
 The release manifest and acceptance record distinguish tests actually run from skipped optional or unsupported environments. Please report a minimal reproducible case for behavior outside these documented limits.
+
+## Optional numerical bridge
+
+Courier transports finite real binary64 data. Nacre bounds ordinary matrices to64 rows/columns, rational solve/inverse references to16 rows and regression to16 coefficients. Symmetric-real eigenproblems and split-real/imaginary FFT outputs are supported; arbitrary complex matrices, arbitrary precision transport, general symbolic expression translation and arbitrary user-supplied Octave source are not exposed. Numerical integration/root/ODE, optimization and signal demonstrations have fixed inputs. Only executed operation/input/platform evidence establishes successful interoperability.
+
+Engine selection currently has one implemented external numerical provider, with operation/shape/precision/output filtering and runtime identity checks. It does not rank multiple engines by measured cost, certify historical GENESIS records as current, or automatically repair failures. Octave calls sharing the resource are serialized within one run. Each call starts fresh processes; conversion, reference work and hashing add cost. Per-child timeouts are not whole-graph deadlines.

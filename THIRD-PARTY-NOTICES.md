@@ -8,6 +8,8 @@ The portable core is implemented with Python's standard library and declares no 
 
 Optional GENESIS bridges refer to software users obtain and configure separately. Importing or calling an external package is not a grant to redistribute its code. No external repository source, application data, private configuration or credentials are part of the public Nacre source distribution.
 
+Octave Courier is an independent MIT-licensed optional dependency. Source/wheel Nacre distributions contain only Nacre's adapter and owned numerical worker, not Courier or GNU Octave. An explicitly Courier-inclusive standalone build bundles the public Courier0.1 Python package and its license/metadata; inspect its BUILD-INFO and licenses directory. GNU Octave itself is never bundled and retains its GNU licensing. SymPy and the MCP SDK remain separately optional dependencies with their own licenses.
+
 ## Standalone executable distributions
 
 Standalone packages bundle a Python interpreter, standard-library components and selected native runtime libraries. They retain their original licenses. The package's `licenses/` materials and artifact manifest record notices collected from the actual target build environment. Preserve those materials when redistributing an executable package. The interpreter is bundled without changes to Python's source code; Nacre supplies application code and a packaging launcher.

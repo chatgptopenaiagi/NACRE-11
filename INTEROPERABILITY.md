@@ -10,6 +10,8 @@ SQLite is part of the portable Python runtime. `db.demo(source="sqlite")` create
 
 ## Optional GENESIS compatibility bridges
 
+Version 0.2.0 also provides independent numerical bridges described in [Numerical capabilities](NUMERICAL-CAPABILITIES.md). `octave.*` uses public Octave Courier0.1 APIs and a separately installed GNU Octave runtime; `symbolic.polynomial` uses a separately installed SymPy package. Neither requires GENESIS-9. The optional `NACRE_GENESIS10_ROOT` setting lets `engine.discover` include repository evidence metadata without loading repository code or treating historical proof as current engine health.
+
 Users who already possess compatible GENESIS software can opt in using explicit environment variables:
 
 ```shell
