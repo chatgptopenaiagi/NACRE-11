@@ -1,0 +1,8 @@
+# SQLite is part of the portable runtime. This creates only its marked demo table.
+task setup: Record <- db.demo(source="sqlite",value=42);
+task rollback: Record <- db.demo(source=setup.source,value=99,fail=true);
+task row: Table <- db.query(source=rollback.source,sql="SELECT value FROM nacre11_demo_values WHERE id=:id",params={id:1});
+verify setup.verified and rollback.verified and rollback.rolled_back;
+verify row.rows[0].value == 42;
+emit row.rows[0].value;
+emit rollback.rolled_back;

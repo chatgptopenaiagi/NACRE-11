@@ -1,0 +1,2 @@
+# The result appears in the command JSON under "emitted".
+emit "Hello, Nacre-11!";

@@ -1,0 +1,6 @@
+let arithmetic: Number = 2 + 3 * 4;
+let power: Number = 2^3^2;
+verify arithmetic == 14;
+verify power == 512;
+emit arithmetic;
+emit power;

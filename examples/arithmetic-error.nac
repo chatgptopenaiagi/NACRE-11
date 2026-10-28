@@ -1,0 +1,3 @@
+# Expected runtime ARITHMETIC failure with a source line.
+let answer: Number = 1 / 0;
+emit answer;

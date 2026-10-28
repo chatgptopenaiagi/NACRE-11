@@ -1,0 +1,26 @@
+{
+  "scope": "Redistribution notices only; these files do not change upstream component licenses. Python runtime LICENSE and Linux distro copyright notices are additionally copied during native bundling.",
+  "records": [
+    {
+      "file": "OPENSSL-LICENSE.txt",
+      "source": "https://raw.githubusercontent.com/openssl/openssl/openssl-3.5.7/LICENSE.txt",
+      "bytes": 10175,
+      "sha256": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a",
+      "status": "FETCHED"
+    },
+    {
+      "file": "ZLIB-NG-LICENSE.md",
+      "source": "https://raw.githubusercontent.com/zlib-ng/zlib-ng/develop/LICENSE.md",
+      "bytes": 867,
+      "sha256": "6c9f0d975b41afaa34d22f55bb8986ce69e5cb7ad327cb2b28820cd425edf5ee",
+      "status": "FETCHED"
+    },
+    {
+      "file": "XZ-0BSD.txt",
+      "source": "https://raw.githubusercontent.com/tukaani-project/xz/v5.8.2/COPYING.0BSD",
+      "bytes": 607,
+      "sha256": "0b01625d853911cd0e2e088dcfb743261034a091bb379246cb25a14cc4c74bf1",
+      "status": "FETCHED"
+    }
+  ]
+}

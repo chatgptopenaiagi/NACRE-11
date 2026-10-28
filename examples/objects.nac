@@ -1,0 +1,5 @@
+task original: Object <- core.object(origin="example:catalogue",kind="product",id="42",revision="1",ownership="read-only snapshot");
+task updated: Object <- core.object(origin="example:catalogue",kind="product",id="42",revision="2",ownership="read-only snapshot");
+task same: Bool <- core.same_object(left=original,right=updated);
+verify same and original.revision != updated.revision;
+emit same;

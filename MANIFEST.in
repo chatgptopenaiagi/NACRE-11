@@ -1,0 +1,18 @@
+include *.md
+include LICENSE
+include pyproject.toml
+include requirements-build.txt
+include requirements-build-linux.txt
+recursive-include src *.py
+recursive-include tests *.py
+recursive-include examples *.nac *.json *.md
+recursive-include scripts *.py *.ps1 *.sh
+recursive-include packaging *.txt *.md *.json
+recursive-include .github *.yml *.yaml *.md
+prune evidence
+prune outputs
+prune dist
+prune build
+prune .venv-build
+prune .venv-linux-build
+global-exclude __pycache__ *.py[cod]

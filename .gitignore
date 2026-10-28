@@ -1,0 +1,11 @@
+evidence/
+outputs/
+dist/
+build/
+.venv*/
+*.egg-info/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+FINAL-RELEASE-REPORT.md
+SESSION-HANDOFF.md

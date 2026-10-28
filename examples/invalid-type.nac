@@ -1,0 +1,3 @@
+# Expected check failure: a string cannot initialize Number.
+let answer: Number = "forty-two";
+emit answer;

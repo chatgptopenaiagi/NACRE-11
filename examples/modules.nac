@@ -1,0 +1,4 @@
+include "modules/constants.nac";
+let answer: Integer = base + 2;
+verify answer == 42;
+emit answer;

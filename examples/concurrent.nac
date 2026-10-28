@@ -1,0 +1,6 @@
+# These waits are independent and can occupy separate runtime workers.
+task left: Number <- core.wait(value=20,milliseconds=100);
+task right: Number <- core.wait(value=22,milliseconds=100);
+let total: Number = left + right;
+verify total == 42;
+emit total;

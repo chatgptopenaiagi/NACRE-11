@@ -1,0 +1,6 @@
+# A new file is written beneath the current workspace outputs directory.
+task file: Artifact <- io.write_json(value={answer:42,message:"verified"},filename="verified-result.json");
+task intact: Bool <- core.artifact_verify(artifact=file);
+verify intact;
+emit file;
+emit intact;

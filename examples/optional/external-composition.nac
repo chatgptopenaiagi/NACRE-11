@@ -1,0 +1,6 @@
+# Requires GENESIS-9 and its configured read-only SQL Server/SymPy routes.
+task row: Table <- db.query(source="sqlserver",sql="SELECT :value AS expected",params={value:42});
+task squared: Symbolic <- math.numeric(expression="x^2",substitutions={x:row.rows[0].expected});
+verify row.read_only;
+verify squared.expression == "1764" and 42*42 == 1764;
+emit squared;

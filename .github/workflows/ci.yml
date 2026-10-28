@@ -1,0 +1,67 @@
+name: Portable language and release artifacts
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  language:
+    name: ${{ matrix.os }} Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+        python: ['3.10', '3.12', '3.14']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install .
+      - run: python -m unittest discover -s tests -v
+      - run: python scripts/release_acceptance.py --command-json '["nacre"]' --output acceptance.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: acceptance-${{ matrix.os }}-${{ matrix.python }}
+          path: acceptance.json
+
+  package:
+    name: Build and install on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-build.txt
+      - run: python scripts/build_release.py --kind python --source-commit ${{ github.sha }}
+      - run: python scripts/build_release.py --kind standalone --source-commit ${{ github.sha }}
+      - run: python scripts/build_release.py --kind archives --source-commit ${{ github.sha }}
+      - run: python scripts/verify_distribution.py dist/nacre11-0.1.0-py3-none-any.whl --kind wheel --output wheel-acceptance.json
+      - run: python scripts/verify_distribution.py dist/nacre11-0.1.0.tar.gz --kind sdist --output source-acceptance.json
+      - name: Verify Windows bundle
+        if: runner.os == 'Windows'
+        run: python scripts/verify_distribution.py dist/Nacre-11-0.1.0-windows-x86_64.zip --kind standalone --output standalone-acceptance.json
+      - name: Verify Linux bundle
+        if: runner.os == 'Linux'
+        run: python scripts/verify_distribution.py dist/Nacre-11-0.1.0-linux-x86_64.tar.gz --kind standalone --output standalone-acceptance.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: distributions-${{ matrix.os }}
+          path: |
+            dist/*
+            *-acceptance.json
+            evidence/build-*.json

@@ -1,0 +1,7 @@
+task source: Table <- data.table(rows=[{id:1,net:10},{id:2,net:25},{id:3,net:40}],source="example:catalogue");
+task taxed: Table <- data.derive(table=source,source_column="net",column="gross",operator="*",value=1.2);
+task selected: Table <- data.filter(table=taxed,column="gross",operator=">",value=20);
+task values: List <- data.column(table=selected,column="gross");
+task statistics: Record <- data.stats(values=values);
+verify statistics.count == 2 and statistics.sum == 78;
+emit statistics.sum;

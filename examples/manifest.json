@@ -1,0 +1,167 @@
+{
+  "schema_version": "1.0",
+  "scope": "Each program runs in a fresh workspace. Optional integrations are skipped unless explicitly enabled and verified by the caller.",
+  "examples": [
+    {
+      "file": "hello.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [],
+      "expected_emitted": [
+        "Hello, Nacre-11!"
+      ]
+    },
+    {
+      "file": "arithmetic.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [],
+      "expected_emitted": [
+        14,
+        512
+      ]
+    },
+    {
+      "file": "expressions.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [],
+      "expected_emitted": [
+        {
+          "label": "verified total",
+          "total": 42
+        }
+      ]
+    },
+    {
+      "file": "mathematics.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [],
+      "expected_emitted": [
+        {
+          "squared_hypotenuse": 25,
+          "mean": 2.5
+        }
+      ]
+    },
+    {
+      "file": "dependency-graph.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [],
+      "expected_emitted": [
+        42
+      ]
+    },
+    {
+      "file": "concurrent.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [],
+      "expected_emitted": [
+        42
+      ]
+    },
+    {
+      "file": "error-handling.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [],
+      "expected_emitted": [
+        42
+      ]
+    },
+    {
+      "file": "verification.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [],
+      "expected_artifacts": 1
+    },
+    {
+      "file": "sqlite.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [],
+      "expected_emitted": [
+        42,
+        true
+      ]
+    },
+    {
+      "file": "transformation.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [],
+      "expected_emitted": [
+        78
+      ]
+    },
+    {
+      "file": "objects.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [],
+      "expected_emitted": [
+        true
+      ]
+    },
+    {
+      "file": "modules/constants.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [],
+      "expected_emitted": []
+    },
+    {
+      "file": "modules.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [],
+      "expected_emitted": [
+        42
+      ]
+    },
+    {
+      "file": "invalid-type.nac",
+      "expected_status": "failed",
+      "expected_exit_code": 2,
+      "requires": [],
+      "expected_error_code": "TYPE"
+    },
+    {
+      "file": "failed-verification.nac",
+      "expected_status": "failed",
+      "expected_exit_code": 1,
+      "requires": [],
+      "expected_error_code": "VERIFY"
+    },
+    {
+      "file": "arithmetic-error.nac",
+      "expected_status": "failed",
+      "expected_exit_code": 1,
+      "requires": [],
+      "expected_error_code": "ARITHMETIC"
+    },
+    {
+      "file": "optional/symbolic.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [
+        "genesis9",
+        "sympy"
+      ]
+    },
+    {
+      "file": "optional/external-composition.nac",
+      "expected_status": "passed",
+      "expected_exit_code": 0,
+      "requires": [
+        "genesis9",
+        "sqlserver",
+        "sympy"
+      ]
+    }
+  ]
+}

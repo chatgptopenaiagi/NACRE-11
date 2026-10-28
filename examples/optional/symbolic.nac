@@ -1,0 +1,8 @@
+# Requires an explicitly configured compatible GENESIS-9 installation.
+use m = "math";
+task derivative: Symbolic <- m.diff(expression="x^3+2*x",variable="x");
+task evaluated: Symbolic <- m.numeric(expression=derivative.expression,substitutions={x:3});
+verify derivative.expression == "3*x**2 + 2";
+verify evaluated.expression == "29" and 3*3^2+2 == 29;
+emit derivative;
+emit evaluated;

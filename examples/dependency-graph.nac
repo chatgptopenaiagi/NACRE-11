@@ -1,0 +1,6 @@
+# Forward references become graph dependencies, rather than source-order calls.
+task answer: Number <- core.sum(values=[left,right]);
+let right: Integer = 22;
+let left: Integer = 20;
+verify answer == 42;
+emit answer;

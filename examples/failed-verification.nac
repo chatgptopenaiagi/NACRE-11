@@ -1,0 +1,4 @@
+# Expected runtime failure: no successful emissions are returned.
+let answer: Integer = 41;
+verify answer == 42;
+emit answer;

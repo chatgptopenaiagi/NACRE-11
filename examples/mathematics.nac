@@ -1,0 +1,6 @@
+# Local arithmetic and statistics do not require a symbolic engine.
+let squared_hypotenuse: Number = 3^2 + 4^2;
+task statistics: Record <- data.stats(values=[1,2,3,4]);
+task accurate: Bool <- core.approx(actual=statistics.mean,expected=2.5,tolerance=0.000001);
+verify squared_hypotenuse == 5^2 and accurate;
+emit {squared_hypotenuse:squared_hypotenuse,mean:statistics.mean};

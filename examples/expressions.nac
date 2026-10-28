@@ -1,0 +1,6 @@
+let unit_price: Integer = 7;
+let quantity: Integer = 6;
+let total: Integer = unit_price * quantity;
+let label: String = "verified " + "total";
+verify total == 42 and label == "verified total";
+emit {label:label,total:total};

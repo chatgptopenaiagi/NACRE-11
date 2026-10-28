@@ -1,0 +1,5 @@
+# Controlled fixture: the first attempt for this workspace/key fails.
+# An explicit retry is legal because this demonstration capability is retry-safe.
+task answer: Number <- demo.flaky(value=42,key="public-retry-v1") retry 1;
+verify answer == 42;
+emit answer;
